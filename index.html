@@ -315,10 +315,45 @@
 
   let aesKey, roomId, topic, myDevice, myName, ws, bc;
   let pc, dc, p2p = false, relayUp = false, peerOnline = false, peerId = null, peerName = null, peerSeen = 0;
-  let makingOffer = false, sending = false, localUp = false;
+  let makingOffer = false, sending = false, localUp = false, decoyMode = false;
   const seen = new Set();
   const fileBuf = new Map();
   const chunkMap = new Map();
+
+  function foldKey(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+  function isCoverKey(pass) {
+    return foldKey(pass) === "imaginacion";
+  }
+  const COVER_NOTES = [
+    { days: 27, text: "Pago de agua — anotar lectura del medidor antes del 25." },
+    { days: 23, text: "Mercado: frijoles, crema, tortillas, plátano, café molido." },
+    { days: 19, text: "Cambio de aceite de la moto, más o menos 120 km." },
+    { days: 16, text: "Sopa de gallina: yuca, elote, güisquil. Dejar hervir despacio." },
+    { days: 13, text: "Recarga $2.00. Revisar saldo el viernes." },
+    { days: 10, text: "Ferretería: cinta aislante, clavos 2\", un interruptor." },
+    { days: 7, text: "Semilla de pipián. Sembrar en menguante." },
+    { days: 5, text: "Centro de salud: llevar DUI y carné. Llegar temprano." },
+    { days: 3, text: "Bus 338, salida 5:40 a.m. No perder el de la tarde." },
+    { days: 1, text: "Revisar candado del corral y la pila del patio." }
+  ];
+  async function seedCover() {
+    const existing = await allMsgs();
+    if (existing.length) return;
+    const now = Date.now();
+    for (const n of COVER_NOTES) {
+      await putMsg({
+        id: "cv_" + n.days + "_" + rid(3),
+        dir: "out",
+        kind: "text",
+        text: n.text,
+        author: myName,
+        ts: now - n.days * 86400000 - ((n.days * 41) % 6) * 3600000,
+        path: "local"
+      });
+    }
+  }
 
   const hex = (buf) => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
   const b64 = (buf) => {
@@ -469,6 +504,11 @@
     toast._t = setTimeout(() => ui.toast.classList.remove("show"), 2800);
   }
   function setStatus() {
+    if (decoyMode) {
+      ui.dot.dataset.c = "yellow";
+      ui.stxt.textContent = "En este aparato";
+      return;
+    }
     const c = p2p ? "green" : (localUp || relayUp || peerOnline) ? "yellow" : "red";
     ui.dot.dataset.c = c;
     ui.stxt.textContent = p2p
@@ -591,6 +631,7 @@
   function pKey() { return "velo.p." + topic; }
 
   function connectLocal() {
+    if (decoyMode) { localUp = true; setStatus(); return; }
     try { bc?.close(); } catch {}
     try {
       bc = new BroadcastChannel("velo-" + topic);
@@ -639,10 +680,12 @@
     }
   }
   function pump() {
+    if (decoyMode) return;
     tickPresence();
     drainQueue();
   }
   function emitLocal(env) {
+    if (decoyMode) return;
     try { bc?.postMessage(env); } catch {}
     pushQueue(env);
   }
@@ -656,6 +699,7 @@
     if (!r.ok) throw new Error("buzón");
   }
   async function emit(env, ttl) {
+    if (decoyMode) return "local";
     emitLocal(env);
     if (IS_FILE) return "local";
     try {
@@ -669,7 +713,7 @@
   }
 
   function connectRelay() {
-    if (IS_FILE) return;
+    if (IS_FILE || decoyMode) return;
     try { ws?.close(); } catch {}
     try {
       const socket = new WebSocket(`${RELAY_WS}/${topic}/ws`);
@@ -686,7 +730,7 @@
     } catch {}
   }
   async function pollMailbox() {
-    if (IS_FILE) return;
+    if (IS_FILE || decoyMode) return;
     try {
       const r = await fetch(`${RELAY}/${topic}/json?poll=1&since=72h`);
       if (!r.ok) return;
@@ -860,9 +904,11 @@
     try {
       const enc = await encJson(payload);
       const env = { type: "chat", id, sender: myDevice, ts: payload.ts, iv: enc.iv, ciphertext: enc.ciphertext };
-      let path = "mailbox";
-      if (canP2P()) { dc.send(JSON.stringify(env)); path = "p2p"; }
-      else path = await emit(env);
+      let path = "local";
+      if (!decoyMode) {
+        if (canP2P()) { dc.send(JSON.stringify(env)); path = "p2p"; }
+        else path = await emit(env);
+      }
       await persistAndShow({ id, dir: "out", kind: "text", text, author: myName, ts: payload.ts, path });
     } catch (e) {
       toast(e.message || "No se pudo cifrar");
@@ -901,8 +947,10 @@
     const chunks = splitBuf(enc.raw, canP2P() ? CHUNK : 2800);
     dock(id, file.name, 8, "Enviando");
     try {
-      let path = "mailbox";
-      if (canP2P()) {
+      let path = "local";
+      if (decoyMode) {
+        /* solo este aparato */
+      } else if (canP2P()) {
         await sendFileP2P(id, enc.iv, chunks, (i, t) => dock(id, file.name, 8 + (i / t) * 90, "P2P"));
         path = "p2p";
       } else {
@@ -952,23 +1000,28 @@
     ui.unlock.textContent = "Abriendo…";
     ui.err.textContent = "";
     try {
+      decoyMode = isCoverKey(pass);
       const pair = await derivePair(pass);
       aesKey = pair.aesKey;
       roomId = pair.roomId;
-      topic = "vz" + roomId.slice(0, 62);
+      topic = decoyMode ? "" : ("vz" + roomId.slice(0, 62));
       myName = nick.slice(0, 24);
       myDevice = await stableDeviceId(roomId, myName);
-      DB = "velo-" + roomId.slice(0, 12) + "-" + myName.toLowerCase().replace(/[^a-z0-9]+/gi, "").slice(0, 16);
+      DB = decoyMode
+        ? ("velo-cv-" + myName.toLowerCase().replace(/[^a-z0-9]+/gi, "").slice(0, 16))
+        : ("velo-" + roomId.slice(0, 12) + "-" + myName.toLowerCase().replace(/[^a-z0-9]+/gi, "").slice(0, 16));
       localStorage.setItem("velo.lastNick", myName);
       const prev = await kvGet("seen");
       if (Array.isArray(prev)) prev.forEach((x) => seen.add(x));
       ui.who.textContent = "Firma: " + myName;
       ui.lock.classList.add("hidden");
       ui.app.classList.remove("hidden");
-      if (IS_FILE) {
+      ui.banner.classList.remove("show");
+      if (IS_FILE && !decoyMode) {
         ui.banner.textContent = "Notas solo en este aparato. Para dos equipos, abre el cuaderno por una dirección https.";
         ui.banner.classList.add("show");
       }
+      if (decoyMode) await seedCover();
       await loadHistory();
       await refreshStorage();
       connectLocal();
@@ -1023,10 +1076,6 @@
   setInterval(refreshStorage, 15000);
   ui.nick.value = localStorage.getItem("velo.lastNick") || "";
   if (!matchMedia("(pointer: coarse)").matches) ui.pass.focus();
-})();
-</script>
-</body>
-</html>
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
