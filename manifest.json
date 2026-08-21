@@ -1,43 +1,71 @@
 {
-  "id": "./",
+  "id": "/cuaderno-para-notas-aleatorias/",
   "name": "Cuaderno",
   "short_name": "Cuaderno",
   "description": "Notas personales en este aparato.",
   "lang": "es",
   "dir": "ltr",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/cuaderno-para-notas-aleatorias/",
+  "scope": "/cuaderno-para-notas-aleatorias/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#14110e",
   "theme_color": "#14110e",
   "categories": ["productivity", "utilities"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./icons/icon-192.png",
+      "src": "/cuaderno-para-notas-aleatorias/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "/cuaderno-para-notas-aleatorias/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/cuaderno-para-notas-aleatorias/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/cuaderno-para-notas-aleatorias/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-192-maskable.png",
+      "src": "/cuaderno-para-notas-aleatorias/icon-192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./icons/icon-512-maskable.png",
+      "src": "/cuaderno-para-notas-aleatorias/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/cuaderno-para-notas-aleatorias/screenshot-narrow.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cuaderno en el teléfono"
+    },
+    {
+      "src": "/cuaderno-para-notas-aleatorias/screenshot-wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Cuaderno en el escritorio"
     }
   ]
 }

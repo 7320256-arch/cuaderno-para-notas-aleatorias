@@ -1,15 +1,16 @@
-/* Cuaderno — service worker (PWABuilder / GitHub Pages) */
-const CACHE = "cuaderno-v1";
+const CACHE = "cuaderno-v2";
 const PRECACHE = [
   "./",
   "./index.html",
   "./manifest.json",
   "./sw.js",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-192-maskable.png",
-  "./icons/icon-512-maskable.png",
-  "./icons/apple-touch-icon.png"
+  "./icon-192.png",
+  "./icon-256.png",
+  "./icon-384.png",
+  "./icon-512.png",
+  "./icon-192-maskable.png",
+  "./icon-512-maskable.png",
+  "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
