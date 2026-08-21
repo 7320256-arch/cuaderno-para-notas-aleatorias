@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#14110e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cuaderno" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Cuaderno</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg: #14110e; --elev: #1c1814; --elev2: #241f19; --line: #3a3228;
+      --text: #efe6d6; --muted: #9a8c78; --accent: #c4a574; --accent-dim: #3a3224;
+      --danger: #c47a6a; --danger-dim: #2e1c18; --me: #2a2418; --them: #1a1916;
+      --green: #8fa382; --yellow: #c4a574; --red: #a56b5c;
+      --shadow: 0 24px 70px rgba(0,0,0,.5);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+      --serif: "Iowan Old Style", Palatino, "Palatino Linotype", "Times New Roman", serif;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(900px 500px at 0% 0%, rgba(110, 88, 64, .22), transparent 55%),
+        radial-gradient(800px 420px at 100% 100%, rgba(70, 90, 78, .16), transparent 50%),
+        var(--bg);
+      color: var(--text);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    body::before {
+      content: "";
+      pointer-events: none;
+      position: fixed; inset: 0;
+      opacity: .045;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+      z-index: 80;
+    }
+    .hidden { display: none !important; }
+    #lock { min-height: 100%; display: grid; place-items: center; padding: 28px 16px; }
+    .shell {
+      width: min(420px, 100%);
+    }
+    .decoy {
+      background: var(--elev);
+      border: 1px solid var(--line);
+      border-radius: 8px 22px 22px 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    .decoy::before {
+      content: "";
+      position: absolute; left: 0; top: 0; bottom: 0; width: 14px;
+      background: linear-gradient(180deg, #6e5840, #3d3226);
+    }
+    .decoy-head { padding: 22px 22px 10px 32px; }
+    .decoy-head h1 {
+      font-family: var(--serif);
+      font-weight: 600;
+      letter-spacing: .12em;
+      font-size: 22px;
+      margin: 0;
+      color: var(--accent);
+    }
+    .decoy-head p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .notes { list-style: none; margin: 0; padding: 6px 18px 8px 32px; }
+    .notes li {
+      display: grid; grid-template-columns: 64px 1fr;
+      gap: 10px; padding: 10px 0;
+      border-top: 1px solid var(--line);
+      font-size: 13.5px; color: #d9d0c0;
+    }
+    .notes time { color: var(--muted); font-size: 11px; padding-top: 2px; }
+    .gate { padding: 8px 22px 22px 32px; border-top: 1px dashed var(--line); }
+    h1 { margin: 12px 0 6px; font-size: 32px; letter-spacing: .18em; }
+    .tag, .hint, label, .muted { color: var(--muted); line-height: 1.5; }
+    .tag { margin: 0 0 22px; }
+    .hint { font-size: 11.5px; margin: 12px 0 0; }
+    label { display: block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; margin: 10px 0; color: var(--muted); }
+    input, textarea, button { font: inherit; color: var(--text); }
+    input, textarea {
+      width: 100%; margin-top: 6px; background: #120f0c; border: 1px solid var(--line);
+      border-radius: 10px; padding: 14px 14px; outline: none;
+      font-size: 16px; /* evita zoom en iOS */
+    }
+    button {
+      background: var(--accent); color: #1a140c; border: 0; border-radius: 10px;
+      padding: 14px 16px; font-weight: 700; cursor: pointer;
+      min-height: 48px; touch-action: manipulation;
+    }
+    #btn-unlock { width: 100%; margin-top: 10px; min-height: 52px; font-size: 16px; }
+    input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); box-shadow: 0 0 0 3px var(--accent-dim); }
+    button:disabled { opacity: .6; cursor: default; }
+    .error { color: var(--danger); min-height: 1.2em; font-size: 13px; }
+    .ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 600; }
+    .ghost.danger, button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); background: var(--danger-dim); }
+    #app {
+      height: 100%;
+      height: var(--vvh, 100dvh);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto auto;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding-top: var(--safe-t);
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "brand status" "actions actions";
+      align-items: center;
+      gap: 8px 10px;
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      z-index: 5;
+    }
+    .brand { grid-area: brand; min-width: 0; }
+    .status { grid-area: status; margin-left: 0; }
+    .actions { grid-area: actions; display: flex; gap: 8px; }
+    .brand strong { letter-spacing: .18em; font-family: var(--serif); font-weight: 600; font-size: 15px; color: var(--accent); }
+    .brand small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .status { display: flex; align-items: center; gap: 8px; margin-left: auto; background: var(--elev); border: 1px solid var(--line); padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+    #dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px color-mix(in srgb, var(--red) 25%, transparent); }
+    #dot[data-c="green"] { background: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 25%, transparent); }
+    #dot[data-c="yellow"] { background: var(--yellow); box-shadow: 0 0 0 4px color-mix(in srgb, var(--yellow) 25%, transparent); }
+    .actions { display: flex; gap: 8px; }
+    .actions button { padding: 8px 10px; font-size: 12px; }
+    #banner { display: none; margin: 8px 14px 0; padding: 8px 12px; border-radius: 8px; background: #2a2418; color: var(--accent); font-size: 12px; line-height: 1.4; }
+    #banner.show { display: block; }
+    #log {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 12px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .empty { margin: auto; max-width: 380px; text-align: center; color: var(--muted); line-height: 1.6; padding: 24px; font-family: var(--serif); font-style: italic; }
+    .bubble {
+      max-width: min(86%, 560px);
+      background: var(--them);
+      border: 1px solid var(--line);
+      border-radius: 4px 14px 14px 14px;
+      padding: 12px 14px 10px;
+      align-self: flex-start;
+    }
+    .bubble.out {
+      align-self: flex-end;
+      background: var(--me);
+      border-color: #4a3f2e;
+      border-radius: 14px 4px 14px 14px;
+    }
+    .bubble header { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .txt { margin: 0; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+    .bubble footer { margin-top: 6px; font-size: 10px; color: var(--muted); text-align: right; }
+    .media, video, audio { display: block; max-width: 100%; border-radius: 12px; margin: 4px 0; }
+    video { max-height: 320px; background: #000; }
+    .file-card { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; text-decoration: none; color: inherit; background: var(--elev2); border-radius: 12px; padding: 10px; border: 1px solid var(--line); }
+    .file-card small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .file-icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-dim); color: var(--accent); font-size: 10px; font-weight: 800; }
+    .dl { font-size: 12px; color: var(--accent); font-weight: 700; }
+    #dock { padding: 0 14px; display: flex; flex-direction: column; gap: 6px; }
+    .prog { background: var(--elev); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
+    .bar { height: 5px; background: #223; border-radius: 99px; margin-top: 6px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width .2s; }
+    .composer { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; padding: 10px 12px calc(12px + var(--safe-b)); border-top: 1px solid var(--line); background: #181410; align-items: end; }
+    #btn-attach { background: transparent; color: var(--muted); padding: 10px; }
+    #msg { resize: none; max-height: 140px; line-height: 1.4; margin: 0; }
+    .modal { position: fixed; inset: 0; background: rgba(4,8,12,.64); display: none; place-items: center; z-index: 20; padding: 18px; }
+    .modal.open { display: grid; }
+    .modal-card { width: min(420px, 100%); background: var(--elev); border: 1px solid var(--line); border-radius: 20px; padding: 22px; box-shadow: var(--shadow); }
+    .modal-card h2 { margin: 0 0 8px; font-size: 18px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    #toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-b)); transform: translateX(-50%) translateY(16px); background: #e7eef6; color: #0b0f14; padding: 10px 14px; border-radius: 999px; font-size: 13px; font-weight: 650; opacity: 0; pointer-events: none; transition: .25s; z-index: 30; max-width: min(92vw, 440px); text-align: center; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    @media (max-width: 719px) {
+      .bubble { max-width: 94%; }
+      .actions button { flex: 1; min-height: 44px; font-size: 13px; }
+      #storage-label { display: none; }
+      .notes li:nth-child(2), .notes li:nth-child(3) { display: none; }
+      video { max-height: 220px; }
+      .file-card { grid-template-columns: auto 1fr; }
+      .file-card .dl { grid-column: 2; justify-self: start; }
+      .modal { padding: 12px; align-items: end; }
+      .modal-card { width: 100%; border-radius: 18px 18px 12px 12px; }
+      .modal-actions button { flex: 1; min-height: 48px; }
+    }
+    @media (min-width: 720px) {
+      .topbar {
+        grid-template-columns: 1fr auto auto;
+        grid-template-areas: "brand status actions";
+        padding: 12px 18px;
+      }
+      #log { padding: 20px 18px 10px; gap: 14px; }
+      .composer { padding: 12px 16px 16px; }
+      .bubble { max-width: min(78%, 560px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="lock">
+    <div class="shell">
+      <div class="decoy">
+        <div class="decoy-head">
+          <h1>CUADERNO</h1>
+          <p>Notas personales · 2026</p>
+        </div>
+        <ul class="notes" aria-hidden="true">
+          <li><time>12 ago</time><span>Mercado: arroz, café, limones</span></li>
+          <li><time>15 ago</time><span>Marea 5:40 a.m. — viento del este</span></li>
+          <li><time>18 ago</time><span>Sopa de res: 2 lb, yuca, güisquil</span></li>
+          <li><time>hoy</time><span>Hoja cerrada — firma y clave para abrir</span></li>
+        </ul>
+        <div class="gate">
+          <label>Firma
+            <input id="nick" maxlength="24" autocomplete="nickname" placeholder="Tu nombre en el cuaderno"/>
+          </label>
+          <label>Clave del cuaderno
+            <input id="pass" type="password" autocomplete="off" spellcheck="false" placeholder="La misma en ambos lados"/>
+          </label>
+          <p class="hint">Dos firmas distintas, una sola clave. Las hojas se guardan en este aparato.</p>
+          <button id="btn-unlock" type="button">Abrir</button>
+          <p id="lock-err" class="error"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="brand">
+        <strong>CUADERNO</strong>
+        <small id="who-label">—</small>
+        <small id="storage-label">0 B en este aparato</small>
+      </div>
+      <div class="status"><i id="dot" data-c="red"></i><span id="stxt">Sin red</span></div>
+      <div class="actions">
+        <button id="btn-wipe-local" type="button" class="ghost">Vaciar hoja</button>
+        <button id="btn-wipe-both" type="button" class="ghost danger">Vaciar copias</button>
+      </div>
+    </header>
+    <div id="banner"></div>
+    <main id="log"></main>
+    <div id="dock"></div>
+    <form class="composer" onsubmit="return false">
+      <button id="btn-attach" type="button" title="Adjuntar" aria-label="Adjuntar">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.5V17a5 5 0 0 1-10 0V7a3.5 3.5 0 1 1 7 0v9.5a2 2 0 1 1-4 0V8" stroke-linecap="round"/></svg>
+      </button>
+      <textarea id="msg" rows="1" placeholder="Una línea…" maxlength="8000" enterkeyhint="enter" autocomplete="off"></textarea>
+      <button id="btn-send" type="button">Añadir</button>
+      <input id="file" type="file" accept="image/*,video/*,audio/*,.pdf,.ppt,.pptx,.doc,.docx,application/pdf" hidden/>
+    </form>
+  </div>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2 id="mtitle">Confirmar</h2>
+      <p id="mbody" class="muted"></p>
+      <div class="modal-actions">
+        <button id="mcancel" type="button" class="ghost">Cancelar</button>
+        <button id="mok" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const RELAY = "https://ntfy.sh";
+  const RELAY_WS = "wss://ntfy.sh";
+  const IS_FILE = location.protocol === "file:";
+  const CHUNK = 64 * 1024;
+  const MAX_OFFLINE = 12 * 1024 * 1024;
+  const MAX_P2P = 200 * 1024 * 1024;
+  const ICE = { iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" }
+  ]};
+  const te = new TextEncoder();
+  const td = new TextDecoder();
+  const $ = (s, r = document) => r.querySelector(s);
+
+  const ui = {
+    lock: $("#lock"), app: $("#app"), pass: $("#pass"), nick: $("#nick"),
+    unlock: $("#btn-unlock"), err: $("#lock-err"), dot: $("#dot"), stxt: $("#stxt"),
+    storage: $("#storage-label"), log: $("#log"), msg: $("#msg"), send: $("#btn-send"),
+    attach: $("#btn-attach"), file: $("#file"), wipeL: $("#btn-wipe-local"),
+    wipeB: $("#btn-wipe-both"), modal: $("#modal"), mtitle: $("#mtitle"),
+    mbody: $("#mbody"), mok: $("#mok"), mcancel: $("#mcancel"), toast: $("#toast"),
+    dock: $("#dock"), who: $("#who-label"), banner: $("#banner")
+  };
+
+  let aesKey, roomId, topic, myDevice, myName, ws, bc;
+  let pc, dc, p2p = false, relayUp = false, peerOnline = false, peerId = null, peerName = null, peerSeen = 0;
+  let makingOffer = false, sending = false, localUp = false;
+  const seen = new Set();
+  const fileBuf = new Map();
+  const chunkMap = new Map();
+
+  const hex = (buf) => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  const b64 = (buf) => {
+    const u = new Uint8Array(buf);
+    let s = "";
+    for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+    return btoa(s);
+  };
+  const unb64 = (s) => {
+    const bin = atob(s);
+    const u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u.buffer;
+  };
+  const rid = (n = 16) => hex(crypto.getRandomValues(new Uint8Array(n)).buffer);
+
+  async function stableDeviceId(room, nick) {
+    const d = await crypto.subtle.digest("SHA-256", te.encode("velo.dev|" + room + "|" + nick.toLowerCase()));
+    return "d_" + hex(d).slice(0, 24);
+  }
+
+  async function derivePair(passphrase) {
+    const material = await crypto.subtle.importKey("raw", te.encode(passphrase), "PBKDF2", false, ["deriveBits", "deriveKey"]);
+    const aes = await crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: te.encode("velo.v1.enc.salt"), iterations: 210000, hash: "SHA-256" },
+      material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    const bits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt: te.encode("velo.v1.room.salt"), iterations: 210000, hash: "SHA-256" },
+      material, 256);
+    return { aesKey: aes, roomId: hex(bits) };
+  }
+  async function encBytes(bytes) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, bytes);
+    return { iv: b64(iv.buffer), raw: ct, ciphertext: b64(ct) };
+  }
+  async function decBytes(ivB64, data) {
+    const iv = new Uint8Array(unb64(ivB64));
+    const buf = typeof data === "string" ? unb64(data) : data;
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, buf);
+  }
+  async function encJson(obj) { return encBytes(te.encode(JSON.stringify(obj))); }
+  async function decJson(iv, ct) { return JSON.parse(td.decode(await decBytes(iv, ct))); }
+  function splitBuf(buffer, size = CHUNK) {
+    const src = new Uint8Array(buffer), out = [];
+    for (let i = 0; i < src.length; i += size) out.push(src.slice(i, i + size).buffer);
+    return out;
+  }
+  function concatBuf(list) {
+    const n = list.reduce((a, b) => a + b.byteLength, 0);
+    const u = new Uint8Array(n); let o = 0;
+    for (const b of list) { u.set(new Uint8Array(b), o); o += b.byteLength; }
+    return u.buffer;
+  }
+  function packFile(meta, fileBytes) {
+    const header = te.encode(JSON.stringify(meta));
+    const out = new Uint8Array(6 + 4 + header.length + fileBytes.byteLength);
+    out.set(te.encode("VELOF1"), 0);
+    new DataView(out.buffer).setUint32(6, header.length);
+    out.set(header, 10);
+    out.set(new Uint8Array(fileBytes), 10 + header.length);
+    return out.buffer;
+  }
+  function unpackFile(plain) {
+    const u8 = new Uint8Array(plain);
+    if (td.decode(u8.slice(0, 6)) !== "VELOF1") {
+      return { name: "archivo", mime: "application/octet-stream", blob: new Blob([plain]) };
+    }
+    const hlen = new DataView(plain).getUint32(6);
+    const header = JSON.parse(td.decode(u8.slice(10, 10 + hlen)));
+    const body = plain.slice(10 + hlen);
+    return { ...header, blob: new Blob([body], { type: header.mime || "application/octet-stream" }) };
+  }
+
+  let DB = "velo-db";
+  function openDb() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains("messages")) db.createObjectStore("messages", { keyPath: "id" }).createIndex("byTs", "ts");
+        if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv", { keyPath: "k" });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  async function putMsg(msg) {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction("messages", "readwrite");
+      tx.objectStore("messages").put(msg);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+  async function allMsgs() {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const req = db.transaction("messages").objectStore("messages").index("byTs").getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  async function kvGet(k) {
+    const db = await openDb();
+    return new Promise((res) => {
+      const req = db.transaction("kv").objectStore("kv").get(k);
+      req.onsuccess = () => res(req.result?.v);
+      req.onerror = () => res(undefined);
+    });
+  }
+  async function kvSet(k, v) {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").put({ k, v });
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+  async function wipeDb() {
+    const db = await openDb();
+    await new Promise((res, rej) => {
+      const tx = db.transaction(["messages", "kv"], "readwrite");
+      tx.objectStore("messages").clear();
+      tx.objectStore("kv").clear();
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+    indexedDB.deleteDatabase(DB);
+  }
+  function fmtBytes(n) {
+    if (!n) return "0 B";
+    const u = ["B", "KB", "MB", "GB"]; let i = 0, v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v < 10 && i > 0 ? v.toFixed(1) : Math.round(v)} ${u[i]}`;
+  }
+  async function refreshStorage() {
+    const est = navigator.storage?.estimate ? await navigator.storage.estimate() : { usage: 0 };
+    ui.storage.textContent = `${fmtBytes(est.usage || 0)} en este aparato`;
+  }
+
+  function toast(t) {
+    ui.toast.textContent = t;
+    ui.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => ui.toast.classList.remove("show"), 2800);
+  }
+  function setStatus() {
+    const c = p2p ? "green" : (localUp || relayUp || peerOnline) ? "yellow" : "red";
+    ui.dot.dataset.c = c;
+    ui.stxt.textContent = p2p
+      ? "Al día"
+      : peerOnline
+        ? ("Con " + (peerName || "la otra firma"))
+        : relayUp
+          ? "Borrador guardado"
+          : localUp
+            ? "En este aparato"
+            : "Sin red";
+  }
+  function esc(s) {
+    return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+  }
+  function timeLabel(ts) {
+    return new Date(ts).toLocaleString("es-SV", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" });
+  }
+  function mimeKind(mime = "", name = "") {
+    if ((mime || "").startsWith("image/")) return "image";
+    if ((mime || "").startsWith("audio/")) return "audio";
+    if ((mime || "").startsWith("video/")) return "video";
+    const ext = (name.split(".").pop() || "").toLowerCase();
+    if (["ppt", "pptx", "pdf", "doc", "docx", "xls", "xlsx", "zip"].includes(ext)) return "doc";
+    return "file";
+  }
+  function glyph(name = "") {
+    const ext = (name.split(".").pop() || "").toLowerCase();
+    if (ext === "pdf") return "PDF";
+    if (["ppt", "pptx"].includes(ext)) return "PPT";
+    if (["mp4", "mov", "webm"].includes(ext)) return "VID";
+    return "FILE";
+  }
+  function pathLabel(p) {
+    if (p === "p2p") return "en el cuaderno";
+    if (p === "mailbox") return "guardado";
+    if (p === "local") return "en este aparato";
+    return "";
+  }
+  function blobUrl(blob) { return URL.createObjectURL(blob); }
+
+  function renderMessage(msg, scroll = true) {
+    if ($(`[data-mid="${msg.id}"]`, ui.log)) return;
+    const mine = msg.dir === "out";
+    const el = document.createElement("article");
+    el.className = `bubble ${mine ? "out" : "in"}`;
+    el.dataset.mid = msg.id;
+    el.innerHTML = `<header><span>${esc(msg.author || (mine ? myName : "Pareja"))}</span><time>${timeLabel(msg.ts)}</time></header>`;
+    if (msg.kind === "text") {
+      const p = document.createElement("p");
+      p.className = "txt";
+      p.textContent = msg.text;
+      el.appendChild(p);
+    } else if (msg.blob && mimeKind(msg.mime, msg.name) === "image") {
+      const img = document.createElement("img");
+      img.className = "media"; img.alt = msg.name || "foto"; img.src = blobUrl(msg.blob);
+      el.appendChild(img);
+    } else if (msg.blob && mimeKind(msg.mime, msg.name) === "audio") {
+      const a = document.createElement("audio"); a.controls = true; a.src = blobUrl(msg.blob); el.appendChild(a);
+    } else if (msg.blob && mimeKind(msg.mime, msg.name) === "video") {
+      const v = document.createElement("video"); v.controls = true; v.playsInline = true; v.src = blobUrl(msg.blob); el.appendChild(v);
+    } else if (msg.blob) {
+      const card = document.createElement("a");
+      card.className = "file-card"; card.href = blobUrl(msg.blob); card.download = msg.name || "archivo";
+      card.innerHTML = `<div class="file-icon">${glyph(msg.name)}</div><div><strong>${esc(msg.name || "adjunto")}</strong><small>${esc(msg.mime || "")} · ${fmtBytes(msg.size || msg.blob.size)}</small></div><span class="dl">Abrir</span>`;
+      el.appendChild(card);
+    }
+    const f = document.createElement("footer");
+    f.innerHTML = `<span>${pathLabel(msg.path)}</span>`;
+    el.appendChild(f);
+    ui.log.appendChild(el);
+    if (scroll) ui.log.scrollTop = ui.log.scrollHeight;
+  }
+  async function persistAndShow(msg) {
+    const empty = ui.log.querySelector(".empty");
+    if (empty) empty.remove();
+    await putMsg(msg);
+    renderMessage(msg);
+    refreshStorage();
+  }
+  async function loadHistory() {
+    ui.log.innerHTML = "";
+    const msgs = await allMsgs();
+    for (const m of msgs) renderMessage(m, false);
+    ui.log.scrollTop = ui.log.scrollHeight;
+    if (!msgs.length) {
+      ui.log.innerHTML = `<div class="empty">Esta hoja está en blanco.</div>`;
+    }
+  }
+  function dock(id, name, pct, label) {
+    let row = $(`[data-prog="${id}"]`, ui.dock);
+    if (!row) {
+      row = document.createElement("div");
+      row.className = "prog"; row.dataset.prog = id;
+      row.innerHTML = `<span></span><div class="bar"><i></i></div>`;
+      ui.dock.appendChild(row);
+    }
+    row.querySelector("span").textContent = `${label} ${name} · ${Math.min(100, Math.round(pct))}%`;
+    row.querySelector("i").style.width = `${Math.min(100, pct)}%`;
+    if (pct >= 100) setTimeout(() => row.remove(), 1200);
+  }
+  function confirmModal(title, body, ok, danger) {
+    return new Promise((resolve) => {
+      ui.mtitle.textContent = title;
+      ui.mbody.textContent = body;
+      ui.mok.textContent = ok;
+      ui.mok.classList.toggle("danger", !!danger);
+      ui.modal.classList.add("open");
+      const done = (v) => { ui.modal.classList.remove("open"); ui.mok.onclick = ui.mcancel.onclick = null; resolve(v); };
+      ui.mok.onclick = () => done(true);
+      ui.mcancel.onclick = () => done(false);
+    });
+  }
+  function autoGrow() {
+    ui.msg.style.height = "auto";
+    ui.msg.style.height = Math.min(140, ui.msg.scrollHeight) + "px";
+  }
+
+  function qKey() { return "velo.q." + topic; }
+  function pKey() { return "velo.p." + topic; }
+
+  function connectLocal() {
+    try { bc?.close(); } catch {}
+    try {
+      bc = new BroadcastChannel("velo-" + topic);
+      bc.onmessage = (ev) => onEnvelope(ev.data, "local");
+    } catch { bc = null; }
+    localUp = true;
+    setStatus();
+  }
+  function pushQueue(env) {
+    let q = [];
+    try { q = JSON.parse(localStorage.getItem(qKey()) || "[]"); } catch { q = []; }
+    q.push(env);
+    if (q.length > 250) q = q.slice(-250);
+    try { localStorage.setItem(qKey(), JSON.stringify(q)); } catch {}
+  }
+  function drainQueue() {
+    let q = [];
+    try { q = JSON.parse(localStorage.getItem(qKey()) || "[]"); } catch { return; }
+    for (let i = 0; i < q.length; i++) onEnvelope(q[i], "local");
+  }
+  function tickPresence() {
+    if (!topic || !myDevice) return;
+    let map = {};
+    try { map = JSON.parse(localStorage.getItem(pKey()) || "{}"); } catch { map = {}; }
+    const now = Date.now();
+    map[myDevice] = { name: myName, t: now };
+    Object.keys(map).forEach((id) => {
+      if (now - (map[id].t || 0) > 8000) delete map[id];
+    });
+    try { localStorage.setItem(pKey(), JSON.stringify(map)); } catch {}
+    let found = null;
+    Object.keys(map).forEach((id) => {
+      if (id !== myDevice) found = { id, name: map[id].name };
+    });
+    if (found) {
+      const was = peerOnline;
+      peerId = found.id;
+      peerName = found.name;
+      peerOnline = true;
+      peerSeen = now;
+      if (!was) ensurePeer();
+      setStatus();
+    } else if (peerOnline && now - peerSeen > 8000) {
+      peerOnline = false;
+      setStatus();
+    }
+  }
+  function pump() {
+    tickPresence();
+    drainQueue();
+  }
+  function emitLocal(env) {
+    try { bc?.postMessage(env); } catch {}
+    pushQueue(env);
+  }
+  async function publish(obj, ttl = 259200) {
+    if (IS_FILE) return;
+    const r = await fetch(`${RELAY}/${topic}`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain; charset=utf-8", TTL: String(ttl), Title: obj.type || "velo" },
+      body: JSON.stringify(obj)
+    });
+    if (!r.ok) throw new Error("buzón");
+  }
+  async function emit(env, ttl) {
+    emitLocal(env);
+    if (IS_FILE) return "local";
+    try {
+      await publish(env, ttl);
+      relayUp = true;
+      setStatus();
+      return "mailbox";
+    } catch {
+      return "local";
+    }
+  }
+
+  function connectRelay() {
+    if (IS_FILE) return;
+    try { ws?.close(); } catch {}
+    try {
+      const socket = new WebSocket(`${RELAY_WS}/${topic}/ws`);
+      ws = socket;
+      socket.onopen = () => { relayUp = true; setStatus(); hello(); };
+      socket.onclose = () => { relayUp = false; setStatus(); setTimeout(connectRelay, 2500); };
+      socket.onerror = () => {};
+      socket.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch { return; }
+        if (msg.event && msg.event !== "message") return;
+        if (msg.message) handleRelayText(msg.message);
+      };
+    } catch {}
+  }
+  async function pollMailbox() {
+    if (IS_FILE) return;
+    try {
+      const r = await fetch(`${RELAY}/${topic}/json?poll=1&since=72h`);
+      if (!r.ok) return;
+      const text = await r.text();
+      for (const line of text.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const row = JSON.parse(line);
+          if (row.message) handleRelayText(row.message);
+        } catch {}
+      }
+    } catch {}
+  }
+  function handleRelayText(text) {
+    try { onEnvelope(JSON.parse(text), "mailbox"); } catch {}
+  }
+  function hello() {
+    tickPresence();
+  }
+
+  function iAmCaller() { return peerId && myDevice < peerId; }
+  function canP2P() { return p2p && dc && dc.readyState === "open"; }
+  function bindDc(channel) {
+    dc = channel;
+    dc.binaryType = "arraybuffer";
+    dc.onopen = () => { p2p = true; setStatus(); };
+    dc.onclose = () => { p2p = false; setStatus(); };
+    dc.onmessage = (e) => {
+      if (typeof e.data === "string") {
+        const m = JSON.parse(e.data);
+        if (m.t === "file-meta") {
+          fileBuf.set(m.id, { meta: m, chunks: new Array(m.totalChunks), got: 0 });
+          dock(m.id, "archivo", 0, "Recibiendo");
+        } else if (m.t === "wipe") performLocalWipe(false);
+        else onEnvelope(m, "p2p");
+      } else onBin(e.data);
+    };
+  }
+  function onBin(buf) {
+    const view = new DataView(buf);
+    const idLen = view.getUint8(0);
+    const id = td.decode(new Uint8Array(buf, 1, idLen));
+    const index = view.getUint32(1 + idLen);
+    const payload = buf.slice(1 + idLen + 4);
+    const rec = fileBuf.get(id);
+    if (!rec) return;
+    rec.chunks[index] = payload;
+    rec.got++;
+    dock(id, "archivo", (rec.got / rec.meta.totalChunks) * 100, "Recibiendo");
+    if (rec.got >= rec.meta.totalChunks) {
+      const file = { type: "file", id, iv: rec.meta.iv, chunks: rec.chunks };
+      fileBuf.delete(id);
+      ingestFile(file, "p2p");
+    }
+  }
+  async function waitIce(peer) {
+    if (peer.iceGatheringState === "complete") return;
+    await new Promise((res) => {
+      const t = setTimeout(res, 2500);
+      peer.addEventListener("icegatheringstatechange", () => {
+        if (peer.iceGatheringState === "complete") { clearTimeout(t); res(); }
+      });
+    });
+  }
+  function ensurePeer() {
+    if (pc || !peerId) return;
+    const peer = new RTCPeerConnection(ICE);
+    pc = peer;
+    peer.ondatachannel = (e) => bindDc(e.channel);
+    peer.onconnectionstatechange = () => {
+      if (["failed", "disconnected", "closed"].includes(peer.connectionState)) { p2p = false; setStatus(); }
+    };
+    peer.onnegotiationneeded = async () => {
+      try {
+        makingOffer = true;
+        await peer.setLocalDescription(await peer.createOffer());
+        await waitIce(peer);
+        await emit({ type: "signal", sender: myDevice, description: peer.localDescription, ts: Date.now() }, 60);
+      } catch (e) { console.warn(e); }
+      finally { makingOffer = false; }
+    };
+    if (iAmCaller()) bindDc(peer.createDataChannel("velo", { ordered: true }));
+  }
+  async function onSignal(data) {
+    if (!pc) ensurePeer();
+    const peer = pc;
+    if (!peer || !data.description) return;
+    const desc = data.description;
+    const collision = desc.type === "offer" && (makingOffer || peer.signalingState !== "stable");
+    if (iAmCaller() && collision) return;
+    await peer.setRemoteDescription(desc);
+    if (desc.type === "offer") {
+      await peer.setLocalDescription(await peer.createAnswer());
+      await waitIce(peer);
+      await emit({ type: "signal", sender: myDevice, description: peer.localDescription, ts: Date.now() }, 60);
+    }
+  }
+
+  function markSeen(id) {
+    if (!id || seen.has(id)) return true;
+    seen.add(id);
+    if (seen.size % 8 === 0) kvSet("seen", [...seen].slice(-400)).catch(() => {});
+    return false;
+  }
+  function onEnvelope(env, path) {
+    if (!env || typeof env !== "object") return;
+    if (env.sender === myDevice) return;
+    if (env.type !== "hello" && env.type !== "signal" && env.type !== "file-chunk" && env.id && markSeen(env.id)) return;
+    if (env.type === "hello") {
+      peerId = env.sender;
+      peerName = env.name || peerName;
+      peerOnline = true;
+      peerSeen = Date.now();
+      setStatus();
+      ensurePeer();
+      return;
+    }
+    if (env.type === "signal") { onSignal(env).catch(console.warn); return; }
+    if (env.type === "wipe") { performLocalWipe(false); return; }
+    if (env.type === "file-chunk") { collectChunk(env); return; }
+    if (env.type === "chat" || env.ciphertext) ingestChat(env, path).catch(console.warn);
+    if (env.type === "file") ingestFile(env, path).catch(console.warn);
+  }
+  function collectChunk(env) {
+    if (!env.id) return;
+    let rec = chunkMap.get(env.id);
+    if (!rec) { rec = { iv: env.iv, total: env.total, parts: [] }; chunkMap.set(env.id, rec); }
+    rec.parts[env.index] = unb64(env.data);
+    rec.iv = rec.iv || env.iv;
+    const got = rec.parts.filter(Boolean).length;
+    dock(env.id, "archivo", (got / rec.total) * 100, "Recibiendo");
+    if (got >= rec.total) {
+      chunkMap.delete(env.id);
+      ingestFile({ id: env.id, iv: rec.iv, chunks: rec.parts }, "mailbox");
+    }
+  }
+  async function ingestChat(env, path) {
+    const payload = await decJson(env.iv, env.ciphertext);
+    if (payload.type === "wipe") return performLocalWipe(false);
+    if (payload.type !== "text") return;
+    await persistAndShow({
+      id: payload.id, dir: "in", kind: "text", text: payload.text,
+      author: payload.author, ts: payload.ts || Date.now(), path
+    });
+  }
+  async function ingestFile(item, path) {
+    if (item.id && markSeen("file:" + item.id)) return;
+    let combined;
+    if (item.chunks) combined = concatBuf(item.chunks.map(c => typeof c === "string" ? unb64(c) : c));
+    else if (item.ciphertext) combined = unb64(item.ciphertext);
+    else return;
+    let plain;
+    try { plain = await decBytes(item.iv, combined); }
+    catch { toast("No se pudo descifrar un archivo"); return; }
+    const u = unpackFile(plain);
+    await persistAndShow({
+      id: item.id || rid(), dir: "in", kind: mimeKind(u.mime, u.name),
+      name: u.name, mime: u.mime, size: u.blob.size, blob: u.blob,
+      author: u.author, ts: u.ts || Date.now(), path
+    });
+  }
+
+  async function sendText() {
+    const text = ui.msg.value.trim();
+    if (!text || sending) return;
+    sending = true;
+    ui.msg.value = "";
+    autoGrow();
+    const id = rid();
+    const payload = { type: "text", id, text, author: myName, ts: Date.now() };
+    try {
+      const enc = await encJson(payload);
+      const env = { type: "chat", id, sender: myDevice, ts: payload.ts, iv: enc.iv, ciphertext: enc.ciphertext };
+      let path = "mailbox";
+      if (canP2P()) { dc.send(JSON.stringify(env)); path = "p2p"; }
+      else path = await emit(env);
+      await persistAndShow({ id, dir: "out", kind: "text", text, author: myName, ts: payload.ts, path });
+    } catch (e) {
+      toast(e.message || "No se pudo cifrar");
+      ui.msg.value = text;
+    } finally {
+      sending = false;
+      ui.msg.focus();
+    }
+  }
+  async function sendFileP2P(id, iv, chunks, onProg) {
+    dc.send(JSON.stringify({ t: "file-meta", id, totalChunks: chunks.length, iv }));
+    const idBytes = te.encode(id);
+    for (let i = 0; i < chunks.length; i++) {
+      const payload = new Uint8Array(chunks[i]);
+      const hdr = new Uint8Array(1 + idBytes.length + 4 + payload.length);
+      hdr[0] = idBytes.length;
+      hdr.set(idBytes, 1);
+      new DataView(hdr.buffer).setUint32(1 + idBytes.length, i);
+      hdr.set(payload, 1 + idBytes.length + 4);
+      dc.send(hdr);
+      onProg(i + 1, chunks.length);
+      if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  async function sendFile(file) {
+    const id = "f_" + rid(10);
+    const buf = await file.arrayBuffer();
+    const packed = packFile({ name: file.name, mime: file.type || "application/octet-stream", author: myName, ts: Date.now() }, buf);
+    if (!canP2P() && packed.byteLength > MAX_OFFLINE) {
+      toast("En modo buzón el máximo es 12 MB.");
+      return;
+    }
+    if (packed.byteLength > MAX_P2P) { toast("El archivo supera 200 MB."); return; }
+    dock(id, file.name, 2, "Cifrando");
+    const enc = await encBytes(packed);
+    const chunks = splitBuf(enc.raw, canP2P() ? CHUNK : 2800);
+    dock(id, file.name, 8, "Enviando");
+    try {
+      let path = "mailbox";
+      if (canP2P()) {
+        await sendFileP2P(id, enc.iv, chunks, (i, t) => dock(id, file.name, 8 + (i / t) * 90, "P2P"));
+        path = "p2p";
+      } else {
+        for (let i = 0; i < chunks.length; i++) {
+          path = await emit({
+            type: "file-chunk", id, sender: myDevice, iv: enc.iv,
+            index: i, total: chunks.length, data: b64(chunks[i]), ts: Date.now()
+          }, 172800);
+          dock(id, file.name, 8 + ((i + 1) / chunks.length) * 90, "Buzón");
+        }
+      }
+      await persistAndShow({
+        id, dir: "out", kind: mimeKind(file.type, file.name), name: file.name, mime: file.type,
+        size: file.size, blob: new Blob([buf], { type: file.type || "application/octet-stream" }),
+        author: myName, ts: Date.now(), path
+      });
+    } catch (e) {
+      toast(e.message || "Fallo al enviar archivo");
+      $(`[data-prog="${id}"]`, ui.dock)?.remove();
+    }
+  }
+  async function performLocalWipe(notify) {
+    seen.clear();
+    await wipeDb();
+    ui.log.innerHTML = "";
+    await loadHistory();
+    refreshStorage();
+    toast(notify ? "Hoja vaciada" : "Se vaciaron las copias en este aparato");
+  }
+  async function sendWipe() {
+    if (canP2P()) { try { dc.send(JSON.stringify({ t: "wipe" })); } catch {} }
+    await emit({ type: "wipe", id: "wipe-" + rid(6), sender: myDevice, ts: Date.now() }, 86400);
+  }
+
+  async function unlock() {
+    const pass = ui.pass.value;
+    const nick = ui.nick.value.trim();
+    if (nick.length < 2) {
+      ui.err.textContent = "Escribe un nombre (mínimo 2 letras). Los dos usuarios deben usar nombres distintos.";
+      return;
+    }
+    if (pass.length < 8) {
+      ui.err.textContent = "Usa al menos 8 caracteres. Ambos deben teclear exactamente la misma frase.";
+      return;
+    }
+    ui.unlock.disabled = true;
+    ui.unlock.textContent = "Abriendo…";
+    ui.err.textContent = "";
+    try {
+      const pair = await derivePair(pass);
+      aesKey = pair.aesKey;
+      roomId = pair.roomId;
+      topic = "vz" + roomId.slice(0, 62);
+      myName = nick.slice(0, 24);
+      myDevice = await stableDeviceId(roomId, myName);
+      DB = "velo-" + roomId.slice(0, 12) + "-" + myName.toLowerCase().replace(/[^a-z0-9]+/gi, "").slice(0, 16);
+      localStorage.setItem("velo.lastNick", myName);
+      const prev = await kvGet("seen");
+      if (Array.isArray(prev)) prev.forEach((x) => seen.add(x));
+      ui.who.textContent = "Firma: " + myName;
+      ui.lock.classList.add("hidden");
+      ui.app.classList.remove("hidden");
+      if (IS_FILE) {
+        ui.banner.textContent = "Notas solo en este aparato. Para dos equipos, abre el cuaderno por una dirección https.";
+        ui.banner.classList.add("show");
+      }
+      await loadHistory();
+      await refreshStorage();
+      connectLocal();
+      connectRelay();
+      pump();
+      await pollMailbox();
+      setStatus();
+      if (!matchMedia("(pointer: coarse)").matches) ui.msg.focus();
+      fitViewport();
+    } catch (e) {
+      ui.err.textContent = e.message || "No se pudo desbloquear";
+    } finally {
+      ui.unlock.disabled = false;
+      ui.unlock.textContent = "Abrir";
+      ui.pass.value = "";
+    }
+  }
+
+  ui.unlock.addEventListener("click", unlock);
+  ui.pass.addEventListener("keydown", (e) => { if (e.key === "Enter") unlock(); });
+  ui.send.addEventListener("click", sendText);
+  ui.msg.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); } });
+  ui.msg.addEventListener("input", autoGrow);
+  ui.attach.addEventListener("click", () => ui.file.click());
+  ui.file.addEventListener("change", async () => {
+    const f = ui.file.files?.[0]; ui.file.value = "";
+    if (f) await sendFile(f);
+  });
+  ui.wipeL.addEventListener("click", async () => {
+    const ok = await confirmModal("Vaciar hoja", "Se borra el cuaderno en este aparato. La otra firma no se ve afectada.", "Vaciar aquí", true);
+    if (ok) await performLocalWipe(true);
+  });
+  ui.wipeB.addEventListener("click", async () => {
+    const ok = await confirmModal("Vaciar copias", "También se vaciará la hoja de la otra firma al abrirla. No se puede deshacer.", "Vaciar ambas", true);
+    if (!ok) return;
+    try { await sendWipe(); } catch {}
+    await performLocalWipe(false);
+  });
+  function fitViewport() {
+    const vv = window.visualViewport;
+    const h = vv ? Math.round(vv.height) : window.innerHeight;
+    document.documentElement.style.setProperty("--vvh", h + "px");
+  }
+  window.visualViewport?.addEventListener("resize", () => {
+    fitViewport();
+    ui.log.scrollTop = ui.log.scrollHeight;
+  });
+  window.addEventListener("resize", fitViewport);
+  fitViewport();
+
+  setInterval(() => { if (topic) pump(); }, 400);
+  setInterval(refreshStorage, 15000);
+  ui.nick.value = localStorage.getItem("velo.lastNick") || "";
+  if (!matchMedia("(pointer: coarse)").matches) ui.pass.focus();
+})();
+</script>
+</body>
+</html>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
